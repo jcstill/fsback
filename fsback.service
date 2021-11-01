@@ -1,0 +1,6 @@
+[Unit]
+Description=fsback service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fsback --sysdaemon

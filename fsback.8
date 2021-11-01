@@ -1,0 +1,69 @@
+.\ fsback manpage
+.\ Copyright (C) 2021  Jacob Still jacobcstill@gmail.com
+.\ 
+.\ This program is free software: you can redistribute it and/or modify
+.\ it under the terms of the GNU Affero General Public License version 3
+.\ as published by the Free Software Foundation
+.\ 
+.\ This program is distributed in the hope that it will be useful,
+.\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\ GNU Affero General Public License for more details.
+.\ 
+.\ You should have received a copy of the GNU Affero General Public License
+.\ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+.\"manpage by Jacob Still
+.mso www.tmac
+.TH "FSBACK" "8" "2021-10-31" "v0.01" "fsback manual"
+
+.SH NAME
+fsback \- A simple backup script
+
+.SH SYNOPSIS
+.B fsback
+[\,OPTIONS\/]
+
+.SH DESCRIPTION
+.PP
+Backup entire directories
+.PP
+When no parameters or options are passed, the configuratiuon in \fI\,/etc/fsback/fsback.cfg\/\fR is used.
+
+.SH OPTIONS
+.TP
+\fB\-c\fR, \fB\-\-config\fR <\,FILE\/>
+use this config file, see \fBfsback\fR(5).
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show help
+.\	.TP
+.\	\fB\-v\fR, \fB\-\-verbose\fR
+.\	be verbose in output
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+show version and exit
+.TP
+\fB\-s\fR, \fB\-\-sysd\-daemon\fR
+log using systemd-cat, this option should only be used in fsback.service
+
+.SH FILES
+.PP
+fsback uses \fI\,/etc/fsback/fsback.cfg\/\fR by default for directories to backup, see \fBfsback\fR(5).
+
+.SH AUTHOR
+Written by Jacob Still
+
+.SH BUGS
+All bugs or requests should go through the
+.URL "http://gitea.jcstill.com/" "gitea page"
+
+.SH COPYRIGHT
+.PP
+Copyright \(co 2021 Jacob Still jacobcstill@gmail.com
+.PP
+License AGPLv3: GNU AFFERO GENERAL PUBLIC LICENSE
+.URL "https://www.gnu.org/licenses/agpl-3.0.html" "version 3"
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.

@@ -1,0 +1,152 @@
+#!/bin/bash
+
+# fsback: a simple backup script
+# Copyright (C) 2021  Jacob Still jacobcstill@gmail.com
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License version 3
+# as published by the Free Software Foundation
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+show_ver(){
+	printf "%s v%s Copyright (C) 2021, Jacob Still jacobcstill@gmail.com\n" "$PROGRAM" "$VERSION"
+}
+show_help(){
+	printf "Usage: %s [OPTIONS]...\n" "$PROGRAM"
+	printf "  simple backup script\n\n"
+	printf "Options:\n"
+	printf "  \e[1m-c\e[0m,\e[1m --config\e[0m FILE  use this config file (defaults to /etc/fsback/fsback.cfg)\n"
+	printf "  \e[1m-h\e[0m,\e[1m --help\e[0m         show this text\n"
+	# printf "  \e[1m-v\e[0m,\e[1m --verbose\e[0m      be verbose in output (add more for more verbosity)\n"
+	printf "  \e[1m-V\e[0m,\e[1m --version\e[0m      show version and exit\n"
+	printf "  \e[1m-s\e[0m,\e[1m --sysdaemon\e[0m    log using systemd-cat, this option should only be used in fsback.service\n"
+}
+PROGRAM="${0##*/}"
+DATE="$(date +%Y%m%d%H%M%S)"
+TAPEFILE="/etc/fsback/fsback.cfg"
+VER_MAJOR=0
+VER_MINOR=01
+VERSION="$VER_MAJOR.$VER_MINOR"
+ERROR=0
+# VERBOSE=0
+SYSTEMD=0
+# opts="$(getopt -o c:vVhs -l config:,version,help,verbose,sysdaemon -n "$PROGRAM" -- "$@" 2>/dev/null)"
+opts="$(getopt -o c:Vhs -l config:,version,help,sysdaemon -n "$PROGRAM" -- "$@" 2>/dev/null)"
+err=$?
+if [ $err -ne 0 ];then
+	show_help
+	exit
+fi
+eval set -- "$opts"
+while true; do case $1 in
+	-c|--config) TAPEFILE="$2"; shift; shift ;;
+	-s|--sysdaemon) SYSTEMD=1; shift ;;
+	-h|--help) show_help; exit ;;
+	# -v|--verbose) VERBOSE=$((VERBOSE+1)); shift ;;
+	-V|--version) show_ver; exit ;;
+	--) shift; break ;;
+esac done
+TAPEFILE="$(readlink -m "$TAPEFILE")"
+if [ ! -f "$TAPEFILE" ]; then
+	if [ "$SYSTEMD" == "1" ];then
+		printf "%s.service: [!] ERROR: Config file does not exist:\n%s.service: %s\n%s.service: see %s(5)\n" "$PROGRAM" "$PROGRAM" "$TAPEFILE" "$PROGRAM" "$PROGRAM"|systemd-cat -p info
+	else
+		printf "\e[38;2;255;0;0m[!]\e[0m ERROR: Config file does not exist:\n%s\nsee %s(5)\n" "$TAPEFILE" "$PROGRAM"
+	fi
+	exit
+fi
+if [ "$SYSTEMD" == "1" ];then
+	printf "%s.service: [*] Starting backup with config: %s\n" "$PROGRAM" "$TAPEFILE"|systemd-cat -p info
+else
+	printf "\e[38;2;153;153;255m[*]\e[0m Starting backup with config: %s\n" "$TAPEFILE"
+fi
+while read -r i; do
+	if [[ $i == \#* ]] || [ -z "$i" ];then continue;fi
+	SRC="$(echo "$i"|awk '{print $1}')"
+	DST="$(echo "$i"|awk '{print $2}')"
+	DSTNAME="$(echo "$i"|awk '{print $3}')"
+	if [ -n "$DSTNAME" ];then
+		DSTNAME="${DSTNAME}-${DATE}.tar.gz"
+	else
+		DSTNAME="$(basename "$SRC")-${DATE}.tar.gz"
+	fi
+	if [ -z "$DST" ];then
+		DST="$(dirname "$SRC")"
+		DSTNAME="$(basename "$SRC")-${DATE}.tar.gz"
+	fi
+	if [ "$SYSTEMD" == "1" ];then
+		printf "%s.service:  [-] Backing up %s...\n" "$PROGRAM" "$(dirname "$SRC")/$(basename "$SRC")"|systemd-cat -p info
+	else
+		printf " \e[38;2;255;255;255m[-]\e[0m Backing up %s...\n" "$(dirname "$SRC")/$(basename "$SRC")"
+	fi
+	cd "$(dirname "$SRC")" 2>/dev/null || {
+		if [ "$SYSTEMD" == "1" ];then
+			printf "%s.service:   [!] ERROR: Source does not exist\n" "$PROGRAM"|systemd-cat -p info
+		else
+			printf "  \e[38;2;255;0;0m[!]\e[0m ERROR: Source does not exist\n"
+		fi
+		((ERROR++))
+		continue
+	}
+	if [ -d "$(readlink -m "$DST")" ]; then
+		tar -czf "$(readlink -m "$DST")/${DSTNAME}" "$(basename "$SRC")" 2> errorstuffs.tmp|| {
+			if [ "$SYSTEMD" == "1" ];then
+				printf "%s.service:   [!] ERROR: tar exited with error: \n%s\n" "$PROGRAM" "$(
+					while read -r i;do
+						printf "%s.service:   [!]  %s\n" "$PROGRAM" "$i"
+					done < errorstuffs.tmp
+				)"|systemd-cat -p info
+			else
+				printf "  \e[38;2;255;0;0m[!]\e[0m ERROR: tar exited with error: \n%s\n" "$(
+					while read -r i;do
+						printf "  \e[38;2;255;0;0m[!]\e[0m %s\n" "$i"
+					done < errorstuffs.tmp
+				)"
+			fi
+			if [ -f errorstuffs.tmp ];then rm -rf errorstuffs.tmp;fi
+			# shellcheck disable=SC2115
+			if [ -f "$(readlink -m "$DST")/${DSTNAME}" ];then rm -vrf "$(readlink -m "$DST")/${DSTNAME}";fi
+			((ERROR++))
+			continue
+		}
+		if [ "$SYSTEMD" == "1" ];then
+			printf "%s.service:  [+] Done\n" "$PROGRAM"|systemd-cat -p info
+		else
+			printf " \e[38;2;255;255;255m[+]\e[0m Done\n"
+		fi
+	else
+		if [ "$SYSTEMD" == "1" ];then
+			printf "%s.service:   [!] ERROR: Destination %s does not exist\n" "$PROGRAM" "$(readlink -m "$DST")"|systemd-cat -p info
+		else
+			printf "  \e[38;2;255;0;0m[!]\e[0m ERROR: Destination %s does not exist\n" "$(readlink -m "$DST")"
+		fi
+		((ERROR++))
+		continue
+	fi
+done < "$TAPEFILE"
+if [ "$ERROR" -eq 0 ];then
+	if [ "$SYSTEMD" == "1" ];then
+		printf "%s.service: [*] Backup Succeeded without error\n" "$PROGRAM"|systemd-cat -p info
+	else
+		printf "\e[38;2;38;217;38m[*]\e[0m Backup Succeeded without error\n"
+	fi
+elif [ "$ERROR" -eq 1 ];then
+	if [ "$SYSTEMD" == "1" ];then
+		printf "%s.service: [*]Backup ended with %s error\n" "$PROGRAM" "$ERROR"|systemd-cat -p info
+	else
+		printf "\e[38;2;255;255;0m[*]\e[0m Backup ended with %s error\n" "$ERROR"
+	fi
+else
+	if [ "$SYSTEMD" == "1" ];then
+		printf "%s.service: [*]Backup ended with %s errors\n" "$PROGRAM" "$ERROR"|systemd-cat -p info
+	else
+		printf "\e[38;2;255;255;0m[*]\e[0m Backup ended with %s errors\n" "$ERROR"
+	fi
+fi

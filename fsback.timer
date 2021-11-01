@@ -1,0 +1,9 @@
+[Unit]
+Description=fsback timer
+
+[Timer]
+OnCalendar=Sun 00:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

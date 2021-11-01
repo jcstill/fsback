@@ -1,0 +1,72 @@
+.\ fsback manpage
+.\ Copyright (C) 2021  Jacob Still jacobcstill@gmail.com
+.\ 
+.\ This program is free software: you can redistribute it and/or modify
+.\ it under the terms of the GNU Affero General Public License version 3
+.\ as published by the Free Software Foundation
+.\ 
+.\ This program is distributed in the hope that it will be useful,
+.\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\ GNU Affero General Public License for more details.
+.\ 
+.\ You should have received a copy of the GNU Affero General Public License
+.\ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+.\"manpage by Jacob Still
+.TH "FSBACK.CFG" "5" "2021-10-31" "v0.01" "fsback manual"
+
+.SH NAME
+fsback.cfg \- config file for fsback
+
+.SH DESCRIPTION
+.PP
+Describes the format of fsback.cfg
+
+.SH FORMAT
+.P
+Directories should be put in the config file with the following format(\,s\/):
+.TP
+<\,SRCDIR\/> <\,DESTDIR\/> [\,TARNAME\/]
+Tar the entire \fI\,SRCDIR\/\fR as \fI\,DESTDIR/TARNAME-ccyymmddhhmmss.tar.zst\/\fR.
+.TP
+<\,SRCDIR\/> [\,DESTDIR\/]
+Tar the entire \fI\,SRCDIR\/\fR as \fI\,DESTDIR/DIR-ccyymmddhhmmss.tar.zst\/\fR. DIR will be the last dir in SRCDIR
+.TP
+<\,SRCDIR\/>
+Tar the entire \fI\,SRCDIR\/\fR as \fI\,DIR-ccyymmddhhmmss.tar.zst\/\fR. DIR will be the last dir in SRCDIR. This will be placed in the directory one up from SRCDIR.
+
+.SH EXAMPLES
+.TP
+/etc/fsback /mnt/backups/ MYTAR
+\fI\,/etc/fsback\/\fR -> \fI\,/mnt/backups/MYTAR-ccyymmddhhmmss.tar.zst\/\fR
+.TP
+/etc/fsback /mnt/backups/
+\fI\,/etc/fsback\/\fR -> \fI\,/mnt/backups/fsback-ccyymmddhhmmss.tar.zst\/\fR
+.TP
+/etc/fsback
+\fI\,/etc/fsback\/\fR -> \fI\,/etc/fsback-ccyymmddhhmmss.tar.zst\/\fR
+
+.SH NOTE
+.PP
+*DIR and *DIR/ are equivalent.
+.TP
+The entire SRCDIR will be tared.
+In the second example above, \fI\,/etc/fsback\/\fR will be added to the tar so that if \fI\,/mnt/backups/fsback-ccyymmddhhmmss.tar.zst\/\fR is untared, it will result in \fI\,/mnt/backups/fsback/\/\fR
+
+.SH AUTHOR
+Written by Jacob Still
+
+.SH BUGS
+All bugs or requests should go through the
+.URL "http://gitea.jcstill.com/" "gitea page"
+
+.SH COPYRIGHT
+.PP
+Copyright \(co 2021 Jacob Still jacobcstill@gmail.com
+.PP
+License AGPLv3: GNU AFFERO GENERAL PUBLIC LICENSE
+.URL "https://www.gnu.org/licenses/agpl-3.0.html" "version 3"
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
